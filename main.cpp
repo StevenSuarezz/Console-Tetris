@@ -169,5 +169,3 @@ int main()
 
     return 0;
 }
-
-// Left of on 
