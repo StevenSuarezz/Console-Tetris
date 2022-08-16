@@ -2,15 +2,19 @@
 #include <Windows.h>
 using namespace std;
 
+const int SCREEN_OFFSET = 2;
+
 wstring tetronimo[7];
 
 int nFieldWidth = 12;
 int nFieldHeight = 18;
 int nScreenWidth = 80;
 int nScreenHeight = 30;
-unsigned char* pField = nullptr;
 
-// Returns index in tetronimo array for a rotated piece based on r rotation
+// Playing field which contains all information to be rendered
+unsigned char* pPlayingField = nullptr;
+
+// Returns index in tetronimo string (0 - 15) for a piece (x, y) depending on rotation r
 int rotate(int x, int y, int r)
 {
     switch (r % 4)
@@ -24,56 +28,83 @@ int rotate(int x, int y, int r)
     return 0;
 }
 
+bool doesPieceFit(int nTetronimo, int nRotation, int posX, int posY)
+{
+    for (int x = 0; x < 4; x++)
+    {
+        for (int y = 0; y < 4; y++)
+        {
+            // Get index of the piece of a tetronimo given the rotation
+            int pieceIndex = rotate(x, y, nRotation);
+
+            int fieldIndex = (posY + y) * nFieldWidth + (posX + x);
+
+            // Ensure no out of bound checks are made
+            if (posX + x >= 0 && posX + x < nFieldWidth)
+            {
+                if (posY + y >= 0 && posY + y < nFieldHeight)
+                {
+                    // Collision detection
+                    if (tetronimo[nTetronimo][pieceIndex] == L'X' && pPlayingField[fieldIndex] != 0)
+                        return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 int main()
 {
     // Create tetronimo assets
-    tetronimo[0].append(L"..x.");
-    tetronimo[0].append(L"..x.");
-    tetronimo[0].append(L"..x.");
-    tetronimo[0].append(L"..x.");
+    tetronimo[0].append(L"..X.");
+    tetronimo[0].append(L"..X.");
+    tetronimo[0].append(L"..X.");
+    tetronimo[0].append(L"..X.");
 
-    tetronimo[1].append(L"..x.");
-    tetronimo[1].append(L".xx.");
-    tetronimo[1].append(L".x..");
+    tetronimo[1].append(L"..X.");
+    tetronimo[1].append(L".XX.");
+    tetronimo[1].append(L".X..");
     tetronimo[1].append(L"....");
 
-    tetronimo[2].append(L".x..");
-    tetronimo[2].append(L".xx.");
-    tetronimo[2].append(L"..x.");
+    tetronimo[2].append(L".X..");
+    tetronimo[2].append(L".XX.");
+    tetronimo[2].append(L"..X.");
     tetronimo[2].append(L"....");
 
     tetronimo[3].append(L"....");
-    tetronimo[3].append(L".xx.");
-    tetronimo[3].append(L".xx.");
+    tetronimo[3].append(L".XX.");
+    tetronimo[3].append(L".XX.");
     tetronimo[3].append(L"....");
 
-    tetronimo[4].append(L"..x.");
-    tetronimo[4].append(L".xx.");
-    tetronimo[4].append(L"..x.");
+    tetronimo[4].append(L"..X.");
+    tetronimo[4].append(L".XX.");
+    tetronimo[4].append(L"..X.");
     tetronimo[4].append(L"....");
 
     tetronimo[5].append(L"....");
-    tetronimo[5].append(L".xx.");
-    tetronimo[5].append(L"..x.");
-    tetronimo[5].append(L"..x.");
+    tetronimo[5].append(L".XX.");
+    tetronimo[5].append(L"..X.");
+    tetronimo[5].append(L"..X.");
 
     tetronimo[6].append(L"....");
-    tetronimo[6].append(L".xx.");
-    tetronimo[6].append(L".x..");
-    tetronimo[6].append(L".x..");
+    tetronimo[6].append(L".XX.");
+    tetronimo[6].append(L".X..");
+    tetronimo[6].append(L".X..");
 
     // Initialize playing field
-    pField = new unsigned char[nFieldWidth * nFieldHeight];
+    pPlayingField = new unsigned char[nFieldWidth * nFieldHeight];
 
     // Set left, right, and bottom borders to character '9' to indicate the tetris playing field
     for (int x = 0; x < nFieldWidth; x++)
         for (int y = 0; y < nFieldHeight; y++)
-            pField[y * nFieldWidth + x] = (x == 0 || x == nFieldWidth - 1 || y == nFieldHeight - 1) ? 9 : 0;
+            pPlayingField[y * nFieldWidth + x] = (x == 0 || x == nFieldWidth - 1 || y == nFieldHeight - 1) ? 9 : 0;
 
     // Create screen array and initialize to empty spaces
-    wchar_t* screen = new wchar_t[nScreenWidth * nScreenHeight];
+    wchar_t* pScreen = new wchar_t[nScreenWidth * nScreenHeight];
     for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
-        screen[i] = L' ';
+        pScreen[i] = L' ';
 
     // Create a screen buffer and set it as the active buffer
     HANDLE hConsole = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
@@ -87,11 +118,25 @@ int main()
         MoveWindow(hwnd, 200, 200, 680, 400, TRUE);
     }
 
+    // Temp debug/testing variables to test piece renderingg
+    int nCurrentPiece = 0;
+    int nCurrentRotation = 0;
+    int nCurrentX = nFieldWidth / 2;
+    int nCurrentY = 0;
+
     // Game loop
     bool bGameOver = false;
 
     while (!bGameOver)
     {
+        // Game timing
+
+        // Input
+
+        // Game logic
+    
+        // Render output
+
         // Draw field into the screen
         for (int x = 0; x < nFieldWidth; x++)
         {
@@ -100,16 +145,29 @@ int main()
                 // Create a string with all of the characters used in the game
                 wstring fieldChars = L" ABCDEFG=#";
                 
-                // Draw the field onto the screen by indexing the fieldChars string by the corresponding value in the pField array
-                // Offset the x and y positions by 2 to place the tetris field away from the edges of the console
-                screen[(y + 2) * nScreenWidth + (x + 2)] = fieldChars[pField[y * nFieldWidth + x]];
+                // Draw the field onto the screen by indexing the fieldChars string by the corresponding value in the pPlayingField array
+                // Offset the x and y positions by SCREEN_OFFSET to place the tetris field away from the edges of the console
+                pScreen[(y + SCREEN_OFFSET) * nScreenWidth + (x + SCREEN_OFFSET)] = fieldChars[pPlayingField[y * nFieldWidth + x]];
             }
                 
         }
 
+        // Draw current piece
+        for (int x = 0; x < 4; x++)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                if (tetronimo[nCurrentPiece][rotate(x, y, nCurrentRotation)] == L'X') {
+                    pScreen[(nCurrentY + y + SCREEN_OFFSET) * nScreenWidth + (nCurrentX + x + SCREEN_OFFSET)] = nCurrentPiece + 'A';
+                }
+            }
+        }
+
         // Display frame
-        WriteConsoleOutputCharacter(hConsole, screen, nScreenWidth * nScreenHeight, { 0, 0 }, &dwBytesWritten);
+        WriteConsoleOutputCharacter(hConsole, pScreen, nScreenWidth * nScreenHeight, { 0, 0 }, &dwBytesWritten);
     }
 
     return 0;
 }
+
+// Left of on 
