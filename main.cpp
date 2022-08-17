@@ -119,10 +119,14 @@ int main()
     }
 
     // Temp debug/testing variables to test piece renderingg
-    int nCurrentPiece = 0;
+    int nCurrentPiece = 1;
     int nCurrentRotation = 0;
     int nCurrentX = nFieldWidth / 2;
     int nCurrentY = 0;
+
+
+    // Boolean array which keeps track of state of keys
+    bool bKey[4];
 
     // Game loop
     bool bGameOver = false;
@@ -130,8 +134,18 @@ int main()
     while (!bGameOver)
     {
         // Game timing
+        this_thread::sleep_for(50ms);
+        for (int k = 0; k < 4; k++)                             // R    L   D Z
+            bKey[k] = (0x8000 & GetAsyncKeyState((unsigned char)("\x27\x25\x28Z"[k]))) != 0;
 
         // Input
+        if (bKey[1])
+        {
+            if (doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX - 1, nCurrentY))
+            {
+                nCurrentX = nCurrentX - 1
+            }
+        }
 
         // Game logic
     
