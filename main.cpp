@@ -1,5 +1,6 @@
 #include <iostream>
 #include <Windows.h>
+#include <thread>
 using namespace std;
 
 const int SCREEN_OFFSET = 2;
@@ -127,6 +128,12 @@ int main()
 
     // Boolean array which keeps track of state of keys
     bool bKey[4];
+    // Rotate flag to clamp rotations
+    bool bRotateHold = false;
+
+    int nSpeed = 20;
+    int nSpeedCounter = 0;
+    bool bForceDown = false;
 
     // Game loop
     bool bGameOver = false;
@@ -135,19 +142,60 @@ int main()
     {
         // Game timing
         this_thread::sleep_for(50ms);
+        nSpeedCounter++;
+        bForceDown = (nSpeedCounter == nSpeed);
+
+        // Input - Read key states then check keys pressed and collision
         for (int k = 0; k < 4; k++)                             // R    L   D Z
             bKey[k] = (0x8000 & GetAsyncKeyState((unsigned char)("\x27\x25\x28Z"[k]))) != 0;
 
-        // Input
-        if (bKey[1])
+        // Right arrow key
+        nCurrentX += (bKey[0] && doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX + 1, nCurrentY)) ? 1 : 0;
+        // Left arrow key
+        nCurrentX -= (bKey[1] && doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX - 1, nCurrentY)) ? 1 : 0;  
+        // Down arrow key
+        nCurrentY += (bKey[2] && doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX, nCurrentY + 1)) ? 1 : 0;
+        
+        // Rotate key 'Z'
+        if (bKey[3])
         {
-            if (doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX - 1, nCurrentY))
-            {
-                nCurrentX = nCurrentX - 1
-            }
+            nCurrentRotation += (!bRotateHold && doesPieceFit(nCurrentPiece, nCurrentRotation + 1, nCurrentX, nCurrentY)) ? 1 : 0;
+            bRotateHold = true;
+        }
+        else
+        {
+            bRotateHold = false;
         }
 
         // Game logic
+        if (bForceDown)
+        {
+            // Check downwards collision detection and move piece down if it fits
+            if (doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX, nCurrentY + 1))
+            {
+                nCurrentY++;
+            }
+            else
+            {
+                // Lock the current piece in the field
+                for (int x = 0; x < 4; x++)
+                    for (int y = 0; y < 4; y++)
+                        if (tetronimo[nCurrentPiece][rotate(x, y, nCurrentRotation)] == L'X')
+                            pPlayingField[(nCurrentY + y) * nFieldWidth + (nCurrentX + x)] = nCurrentPiece + 1;
+                
+                // Check if there are any horizontal lines
+
+                // Choose next piece
+                nCurrentX = nFieldWidth / 2;
+                nCurrentY = 0;
+                nCurrentRotation = 0;
+                nCurrentPiece = rand() % 7;
+
+                // End game if next piece does not fit
+                bGameOver = !doesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX, nCurrentY);
+            }
+            nSpeedCounter = 0;
+        }
     
         // Render output
 
@@ -183,3 +231,4 @@ int main()
 
     return 0;
 }
+
