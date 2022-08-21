@@ -119,12 +119,11 @@ int main()
         MoveWindow(hwnd, 200, 200, 680, 400, TRUE);
     }
 
-    // Temp debug/testing variables to test piece renderingg
-    int nCurrentPiece = 1;
+    // Initial piece values
+    int nCurrentPiece = rand() % 7;
     int nCurrentRotation = 0;
     int nCurrentX = nFieldWidth / 2;
     int nCurrentY = 0;
-
 
     // Boolean array which keeps track of state of keys
     bool bKey[4];
@@ -184,6 +183,28 @@ int main()
                             pPlayingField[(nCurrentY + y) * nFieldWidth + (nCurrentX + x)] = nCurrentPiece + 1;
                 
                 // Check if there are any horizontal lines
+                for (int y = 0; y < 4; y++)
+                {
+                    // Only need to check the rows of the current tetronimo position
+                    if (nCurrentY + y < nFieldHeight - 1)
+                    {
+                        // Loop through the row and set flag to false if empty space is found
+                        bool bLine = true;
+                        for (int x = 1; x < nFieldWidth - 1; x++)
+                            if (pPlayingField[(nCurrentY + y) * nFieldWidth + x] == 0)
+                            {
+                                bLine = false;
+                                break;
+                            }
+
+                        // If there is a horizontal line, set it to '='
+                        if (bLine)
+                        {
+                            for (int x = 1; x < nFieldWidth - 1; x++)
+                                pPlayingField[(nCurrentY + y) * nFieldWidth + x] = 8;
+                        }
+                    }
+                }
 
                 // Choose next piece
                 nCurrentX = nFieldWidth / 2;
@@ -219,7 +240,8 @@ int main()
         {
             for (int y = 0; y < 4; y++)
             {
-                if (tetronimo[nCurrentPiece][rotate(x, y, nCurrentRotation)] == L'X') {
+                if (tetronimo[nCurrentPiece][rotate(x, y, nCurrentRotation)] == L'X') 
+                {
                     pScreen[(nCurrentY + y + SCREEN_OFFSET) * nScreenWidth + (nCurrentX + x + SCREEN_OFFSET)] = nCurrentPiece + 'A';
                 }
             }
@@ -232,3 +254,4 @@ int main()
     return 0;
 }
 
+//Left off on 30:30
