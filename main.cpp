@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <thread>
+#include <vector>
 using namespace std;
 
 const int SCREEN_OFFSET = 2;
@@ -129,10 +130,12 @@ int main()
     bool bKey[4];
     // Rotate flag to clamp rotations
     bool bRotateHold = false;
-
     int nSpeed = 20;
     int nSpeedCounter = 0;
     bool bForceDown = false;
+    int nPieceCount = 0;
+    int nScore = 0;
+    vector<int> vLines;
 
     // Game loop
     bool bGameOver = false;
@@ -182,6 +185,10 @@ int main()
                         if (tetronimo[nCurrentPiece][rotate(x, y, nCurrentRotation)] == L'X')
                             pPlayingField[(nCurrentY + y) * nFieldWidth + (nCurrentX + x)] = nCurrentPiece + 1;
                 
+                nPieceCount++;
+                if (nPieceCount % 10 == 0)
+                    if (nSpeed >= 10) nSpeed--;
+
                 // Check if there are any horizontal lines
                 for (int y = 0; y < 4; y++)
                 {
@@ -202,10 +209,16 @@ int main()
                         {
                             for (int x = 1; x < nFieldWidth - 1; x++)
                                 pPlayingField[(nCurrentY + y) * nFieldWidth + x] = 8;
+
+                            vLines.push_back(nCurrentY + y);
                         }
                     }
                 }
 
+                // Flat 25 point increase to score, multiple increase if more than 1 line is created at once
+                nScore += 25;
+                if (!vLines.empty()) nScore += (1 << vLines.size()) * 100;
+                
                 // Choose next piece
                 nCurrentX = nFieldWidth / 2;
                 nCurrentY = 0;
@@ -247,11 +260,35 @@ int main()
             }
         }
 
+        // Draw the score
+        swprintf_s(&pScreen[2 * nScreenWidth + nFieldWidth + 6], 16, L"SCORE: %8d", nScore);
+
+        if (!vLines.empty())
+        {
+            WriteConsoleOutputCharacter(hConsole, pScreen, nScreenWidth * nScreenHeight, { 0, 0 }, &dwBytesWritten);
+            this_thread::sleep_for(400ms);
+
+            // Shift rows down
+            for (auto &row : vLines)
+            {
+                for (int x = 1; x < nFieldWidth - 1; x++)
+                {
+                    for (int y = row; y > 0; y--)
+                        pPlayingField[y * nFieldWidth + x] = pPlayingField[(y - 1) * nFieldWidth + x];
+                    pPlayingField[x] = 0;
+                }
+            }
+
+            vLines.clear();
+        }
+
         // Display frame
         WriteConsoleOutputCharacter(hConsole, pScreen, nScreenWidth * nScreenHeight, { 0, 0 }, &dwBytesWritten);
     }
 
+    CloseHandle(hConsole);
+    cout << "Game Over! Score: " << nScore << endl;
+    system("pause");
+
     return 0;
 }
-
-//Left off on 30:30
